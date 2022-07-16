@@ -6,7 +6,7 @@ import dateutil.parser
 import json
 import argparse
 import csv
-from base64 import b64encode
+from requests.auth import HTTPBasicAuth
 from typing import Any
 from typing import Dict
 from typing import List
@@ -17,15 +17,25 @@ import requests
 import math
 
 
-def download_lightnings(requested_day: datetime.datetime) -> Union[List[Dict[str, Any]], None]:
+def download_lightnings(requested_day: datetime.datetime, host: str, username: str, token: str) -> Union[List[Dict[str, Any]], None]:
     year: int = requested_day.year
     month: int = requested_day.month
     day: int = requested_day.day
-    headers: Dict[str, str] = {'Authorization': 'Basic {}'.format(
-        b64encode(b"").decode("utf-8"))}
-    url: str = "https://gisfire.petprojects.tech/api/v1/meteocat/lightning/{}/{}/{}?srid=25831".format(year, month, day)
-    response: requests.Response = requests.get(url, headers=headers)
+    auth: HTTPBasicAuth = HTTPBasicAuth(username, token)
+    url: str = "{}/meteocat/lightning/{}/{}/{}?srid=25831".format(host, year, month, day)
+    response: requests.Response = requests.get(url, auth=auth)
     if response.status_code == 200:
+        return json.loads(response.text)
+    else:
+        return None
+
+
+def get_land_cover(identifier: int, host: str, username: str, token: str) -> Union[Dict[str, Any], None]:
+    auth: HTTPBasicAuth = HTTPBasicAuth(username, token)
+    url: str = "{}/meteocat/lightning/land_cover/{}".format(host, identifier)
+    response: requests.Response = requests.get(url, auth=auth)
+    if response.status_code == 200:
+        print(json.loads(response.text), identifier)
         return json.loads(response.text)
     else:
         return None
@@ -67,18 +77,21 @@ if __name__ == "__main__":  # pragma: no cover
 
     days_to_search: List[datetime.datetime] = list()
     matched_lightnings = list()
-    matched_lightnings.append(['id', 'meteocat_id', 'date-UTC', 'x', 'y', 'weight', 'date-UTC-ff', 'x-ff', 'y-ff'])
+    matched_lightnings.append(['id', 'meteocat_id', 'date-UTC', 'x', 'y', 'land_cover', 'weight', 'date-UTC-ff', 'x-ff', 'y-ff'])
     for lightning in filtered_lightnings:
         days_to_search = [lightning[0] - datetime.timedelta(days=day) for day in range(6)]
         lightnings: List[Dict[str, Any]] = list()
         for day in days_to_search:
-            lightnings += download_lightnings(datetime.datetime(day.year, day.month, day.day, 0, 0, 0))
+            lightnings += download_lightnings(datetime.datetime(day.year, day.month, day.day, 0, 0, 0), args.host, args.username, args.token)
         print(lightning[0], len(lightnings))
+        computed_cost_lightnings = list()
         if lightnings is not None and len(lightnings) > 0:
             # print(len(lightnings))
             distance_max = 10000000000
             lightning_max = None
             for possible in lightnings:
+                if not bool(possible['hit_ground']):
+                    continue
                 possible_date = dateutil.parser.isoparse(possible['date'])
                 possible_x = possible['coordinates_x']
                 possible_y = possible['coordinates_y']
@@ -86,15 +99,34 @@ if __name__ == "__main__":  # pragma: no cover
                 diff_time: datetime.timedelta = lightning[0] - possible_date
 
                 if diff_time.total_seconds() > 0:
-                    distance = math.sqrt((lightning[1] - possible_x)**2 + (lightning[2] - possible_y)**2 + (diff_time.total_seconds() / (60*60))**2)
-                    if distance < distance_max:
-                        distance_max = distance
-                        lightning_max = possible.copy()
-            date_in_utc: datetime.datetime = lightning[0].astimezone(pytz.utc)
-            new_row = [lightning_max['id'], lightning_max['meteocat_id'], lightning_max['date'],
-                       lightning_max['coordinates_x'], lightning_max['coordinates_y'], distance_max,
-                       date_in_utc.strftime("%Y-%m-%dT%H:%M:%S.%fZ"), lightning[1], lightning[2]]
-            matched_lightnings.append(new_row)
+                    distance = math.sqrt((lightning[1] - possible_x)**2 + (lightning[2] - possible_y)**2 + (diff_time.total_seconds() / (60*60*24))**2)
+                    if distance < 15000:
+                        computed_cost_lightnings.append([distance, possible.copy()])
+
+            if len(computed_cost_lightnings) > 0:
+                computed_cost_lightnings.sort(key=lambda l: l[0])
+                lightning_max = None
+                distance_max = None
+                land_cover = None
+                for computed_lightning in computed_cost_lightnings:
+                    land = get_land_cover(computed_lightning[1]['id'], args.host, args.username, args.token)
+                    if land is None:
+                        print('Land cover not found!', computed_lightning[1]['id'])
+                        break
+                    land_cover = int(land['land_cover_type'])
+                    if 0 < land_cover < 300:
+                        lightning_max = computed_lightning[1]
+                        distance_max = computed_lightning[0]
+                        break
+                if lightning_max is not None:
+                    date_in_utc: datetime.datetime = lightning[0].astimezone(pytz.utc)
+                    new_row = [lightning_max['id'], lightning_max['meteocat_id'], lightning_max['date'],
+                               lightning_max['coordinates_x'], lightning_max['coordinates_y'], land_cover, distance_max,
+                               date_in_utc.strftime("%Y-%m-%dT%H:%M:%S.%fZ"), lightning[1], lightning[2]]
+                    matched_lightnings.append(new_row)
+            else:
+                print('No match')
+
     with open(args.output_file, 'w') as file:
         writer = csv.writer(file)
         writer.writerows(matched_lightnings)
