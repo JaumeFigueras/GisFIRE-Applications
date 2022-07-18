@@ -22,7 +22,7 @@ def download_lightnings(requested_day: datetime.datetime, host: str, username: s
     month: int = requested_day.month
     day: int = requested_day.day
     auth: HTTPBasicAuth = HTTPBasicAuth(username, token)
-    url: str = "{}/meteocat/lightning/{}/{}/{}?srid=25831".format(host, year, month, day)
+    url: str = "{}/meteocat/lightning/grouped_by_discharges/{}/{}/{}?srid=25831".format(host, year, month, day)
     response: requests.Response = requests.get(url, auth=auth)
     if response.status_code == 200:
         return json.loads(response.text)
@@ -54,7 +54,6 @@ if __name__ == "__main__":  # pragma: no cover
     args = parser.parse_args()
 
     # Loaf firefigters records
-    carpetaTreball = r'C:\Users\Toni Guasch\PycharmProjects\llamps\Dades\AnalisiTreball'
     csv_lightnings: List[List[str]] = list()
     with open(args.input_file) as csvfile:
         reader = csv.reader(csvfile)
@@ -77,8 +76,8 @@ if __name__ == "__main__":  # pragma: no cover
 
     days_to_search: List[datetime.datetime] = list()
     matched_lightnings = list()
-    matched_lightnings.append(['id', 'meteocat_id', 'date-UTC', 'x', 'y', 'land_cover', 'weight', 'date-UTC-ff', 'x-ff', 'y-ff'])
-    for lightning in filtered_lightnings:
+    matched_lightnings.append(['id', 'meteocat_id', 'discharges', 'date-UTC', 'x', 'y', 'land_cover', 'weight', 'date-UTC-ff', 'x-ff', 'y-ff'])
+    for lightning in filtered_lightnings[424:450]:
         days_to_search = [lightning[0] - datetime.timedelta(days=day) for day in range(6)]
         lightnings: List[Dict[str, Any]] = list()
         for day in days_to_search:
@@ -90,24 +89,24 @@ if __name__ == "__main__":  # pragma: no cover
             distance_max = 10000000000
             lightning_max = None
             for possible in lightnings:
-                if not bool(possible['hit_ground']):
-                    continue
                 possible_date = dateutil.parser.isoparse(possible['date'])
-                possible_x = possible['coordinates_x']
-                possible_y = possible['coordinates_y']
+                possible_x = possible['x']
+                possible_y = possible['y']
+                possible_discharges = possible['discharges']
 
                 diff_time: datetime.timedelta = lightning[0] - possible_date
 
                 if diff_time.total_seconds() > 0:
-                    distance = math.sqrt((lightning[1] - possible_x)**2 + (lightning[2] - possible_y)**2 + (diff_time.total_seconds() / (60*60*24))**2)
+                    distance = math.sqrt((lightning[1] - possible_x)**2 + (lightning[2] - possible_y)**2 + (diff_time.total_seconds() / (60*60))**2)  # / (1 + ((possible_discharges - 1) / 4))
                     if distance < 15000:
-                        computed_cost_lightnings.append([distance, possible.copy()])
+                        computed_cost_lightnings.append([distance, possible.copy(), possible_discharges])
 
             if len(computed_cost_lightnings) > 0:
                 computed_cost_lightnings.sort(key=lambda l: l[0])
                 lightning_max = None
                 distance_max = None
                 land_cover = None
+                discharges_max = None
                 for computed_lightning in computed_cost_lightnings:
                     land = get_land_cover(computed_lightning[1]['id'], args.host, args.username, args.token)
                     if land is None:
@@ -117,11 +116,12 @@ if __name__ == "__main__":  # pragma: no cover
                     if 0 < land_cover < 300:
                         lightning_max = computed_lightning[1]
                         distance_max = computed_lightning[0]
+                        discharges_max = computed_lightning[2]
                         break
                 if lightning_max is not None:
                     date_in_utc: datetime.datetime = lightning[0].astimezone(pytz.utc)
-                    new_row = [lightning_max['id'], lightning_max['meteocat_id'], lightning_max['date'],
-                               lightning_max['coordinates_x'], lightning_max['coordinates_y'], land_cover, distance_max,
+                    new_row = [lightning_max['id'], lightning_max['meteocat_id'], discharges_max, lightning_max['date'],
+                               lightning_max['x'], lightning_max['y'], land_cover, distance_max,
                                date_in_utc.strftime("%Y-%m-%dT%H:%M:%S.%fZ"), lightning[1], lightning[2]]
                     matched_lightnings.append(new_row)
             else:
