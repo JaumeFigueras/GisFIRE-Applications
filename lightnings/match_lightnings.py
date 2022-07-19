@@ -81,7 +81,7 @@ if __name__ == "__main__":  # pragma: no cover
     # noinspection DuplicatedCode
     args = parser.parse_args()
 
-    # Loaf firefigters records
+    # Load firefighters records
     csv_lightnings: List[List[str]] = list()
     with open(args.input_file) as csvfile:
         reader = csv.reader(csvfile)
