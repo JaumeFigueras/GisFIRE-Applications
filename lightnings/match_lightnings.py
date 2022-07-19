@@ -76,7 +76,7 @@ if __name__ == "__main__":  # pragma: no cover
     parser.add_argument('-u', '--username', help='Database username')
     parser.add_argument('-t', '--token', help='Database password')
     parser.add_argument('-y', '--type', help='Type of matching algorithm: individual, combined', default='individual')
-    parser.add_argument('-f', '--time-divider', help='Time divider on the time component cost: 1=seconcs, 60=minutes', default=1, type=float)
+    parser.add_argument('-f', '--time-divider', help='Time divider on the time component cost: 1=seconds, 60=minutes', default=1, type=float)
 
     # noinspection DuplicatedCode
     args = parser.parse_args()
