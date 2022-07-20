@@ -6,6 +6,8 @@ import dateutil.parser
 import json
 import argparse
 import csv
+from numpy.random import RandomState
+
 from requests.auth import HTTPBasicAuth
 from typing import Any
 from typing import Dict
@@ -20,6 +22,19 @@ import math
 def download_lightning(identifier: int, host: str, username: str, token: str) -> Union[Dict[str, Any], None]:
     auth: HTTPBasicAuth = HTTPBasicAuth(username, token)
     url: str = "{}/meteocat/lightning/{}?srid=25831".format(host, identifier)
+    response: requests.Response = requests.get(url, auth=auth)
+    if response.status_code == 200:
+        return json.loads(response.text)
+    else:
+        return None
+
+
+def download_lightnings(requested_day: datetime.datetime, host: str, username: str, token: str) -> Union[List[Dict[str, Any]], None]:
+    year: int = requested_day.year
+    month: int = requested_day.month
+    day: int = requested_day.day
+    auth: HTTPBasicAuth = HTTPBasicAuth(username, token)
+    url: str = "{}/meteocat/lightning/{}/{}/{}?srid=25831".format(host, year, month, day)
     response: requests.Response = requests.get(url, auth=auth)
     if response.status_code == 200:
         return json.loads(response.text)
@@ -166,12 +181,22 @@ if __name__ == "__main__":  # pragma: no cover
               ]
     csv_output.append(header)
     for lightning in csv_lightnings[:10]:
-        identifier = int(lightning[0])
-        data = download_lightning(identifier, args.host, args.username, args.token)
-        if data is None:
-            print('Lightning not found!', identifier)
+        date = dateutil.parser.isoparse(lightning[3])
+        # Get the same day lightnings
+        negative_lightnings: List[Dict[str, Any]] = download_lightnings(datetime.datetime(date.year, date.month, date.day, 0, 0, 0), args.host, args.username, args.token)
+        if negative_lightnings is None or len(negative_lightnings) == 0:
+            print('Lightning not found!', lightning[3])
             break
-        print(data['date'])
+        print(lightning[3])
+        # Remove non ground
+        negative_lightnings = [i for i in negative_lightnings if bool(i['hit_ground'])]
+        rs = RandomState(1234567890)
+        rs.shuffle(negative_lightnings)
+        negative_dataset = list()
+
+
+
+
         peak_current = float(data['peak_current'])
         chi_squared = float(data['chi_squared'])
         number_of_sensors = int(data['number_of_sensors'])
