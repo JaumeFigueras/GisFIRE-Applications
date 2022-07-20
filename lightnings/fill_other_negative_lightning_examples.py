@@ -22,7 +22,7 @@ import math
 def download_lightning(identifier: int, host: str, username: str, token: str) -> Union[Dict[str, Any], None]:
     auth: HTTPBasicAuth = HTTPBasicAuth(username, token)
     url: str = "{}/meteocat/lightning/{}?srid=25831".format(host, identifier)
-    response: requests.Response = requests.get(url, auth=auth)
+    response: requests.Response = requests.get(url, auth=auth, verify=False)
     if response.status_code == 200:
         return json.loads(response.text)
     else:
@@ -35,7 +35,7 @@ def download_lightnings(requested_day: datetime.datetime, host: str, username: s
     day: int = requested_day.day
     auth: HTTPBasicAuth = HTTPBasicAuth(username, token)
     url: str = "{}/meteocat/lightning/{}/{}/{}?srid=25831".format(host, year, month, day)
-    response: requests.Response = requests.get(url, auth=auth)
+    response: requests.Response = requests.get(url, auth=auth, verify=False)
     if response.status_code == 200:
         return json.loads(response.text)
     else:
@@ -45,7 +45,7 @@ def download_lightnings(requested_day: datetime.datetime, host: str, username: s
 def download_discharges(identifier: int, host: str, username: str, token: str) -> Union[Dict[str, Any], None]:
     auth: HTTPBasicAuth = HTTPBasicAuth(username, token)
     url: str = "{}/meteocat/lightning/discharge_count/{}?srid=25831".format(host, identifier)
-    response: requests.Response = requests.get(url, auth=auth)
+    response: requests.Response = requests.get(url, auth=auth, verify=False)
     if response.status_code == 200:
         return json.loads(response.text)
     else:
@@ -56,7 +56,7 @@ def download_discharges(identifier: int, host: str, username: str, token: str) -
 def get_land_cover(identifier: int, host: str, username: str, token: str) -> Union[Dict[str, Any], None]:
     auth: HTTPBasicAuth = HTTPBasicAuth(username, token)
     url: str = "{}/meteocat/lightning/land_cover/{}".format(host, identifier)
-    response: requests.Response = requests.get(url, auth=auth)
+    response: requests.Response = requests.get(url, auth=auth, verify=False)
     if response.status_code == 200:
         return json.loads(response.text)
     else:
@@ -68,7 +68,7 @@ def get_nearest_weather_stations(date: datetime.date, x: float, y: float, host: 
     url: str = "{}/meteocat/station/nearest?date={}&x={}&y={}&srid=25831".format(host,
                                                                                  date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                                                                                  str(x), str(y))
-    response: requests.Response = requests.get(url, auth=auth)
+    response: requests.Response = requests.get(url, auth=auth, verify=False)
     if response.status_code == 200:
         return json.loads(response.text)
     else:
@@ -83,7 +83,7 @@ def get_humidity(date: datetime.date, average_of_previous_days: int, station_cod
     if average_of_previous_days != 0:
         url: str = "{}/meteocat/data/measure/{}/HR?date={}&operation=average,{}".\
             format(host, station_code, date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"), str(average_of_previous_days))
-    response: requests.Response = requests.get(url, auth=auth)
+    response: requests.Response = requests.get(url, auth=auth, verify=False)
     if response.status_code == 200:
         return json.loads(response.text)
     else:
@@ -98,7 +98,7 @@ def get_temperature(date: datetime.date, average_of_previous_days: int, station_
     if average_of_previous_days != 0:
         url: str = "{}/meteocat/data/measure/{}/HR?date={}&operation=average,{}".\
             format(host, station_code, date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"), str(average_of_previous_days))
-    response: requests.Response = requests.get(url, auth=auth)
+    response: requests.Response = requests.get(url, auth=auth, verify=False)
     if response.status_code == 200:
         return json.loads(response.text)
     else:
@@ -112,7 +112,7 @@ def get_rain(date: datetime.date, average_of_previous_days: int, station_code: s
     if average_of_previous_days != 0:
         url: str = "{}/meteocat/data/measure/{}/PPT?date={}&operation=sum,{}".\
             format(host, station_code, date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"), str(average_of_previous_days))
-    response: requests.Response = requests.get(url, auth=auth)
+    response: requests.Response = requests.get(url, auth=auth, verify=False)
     if response.status_code == 200:
         return json.loads(response.text)
     else:
@@ -127,7 +127,7 @@ def get_solar_irradiance(date: datetime.date, average_of_previous_days: int, sta
     if average_of_previous_days != 0:
         url: str = "{}/meteocat/data/measure/{}/RS?date={}&operation=sum,{}".\
             format(host, station_code, date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"), str(average_of_previous_days))
-    response: requests.Response = requests.get(url, auth=auth)
+    response: requests.Response = requests.get(url, auth=auth, verify=False)
     if response.status_code == 200:
         return json.loads(response.text)
     else:
@@ -142,7 +142,7 @@ def get_wind(date: datetime.date, average_of_previous_days: int, station_code: s
     if average_of_previous_days != 0:
         url: str = "{}/meteocat/data/measure/{}/VV10?date={}&operation=sum,{}".\
             format(host, station_code, date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"), str(average_of_previous_days))
-    response: requests.Response = requests.get(url, auth=auth)
+    response: requests.Response = requests.get(url, auth=auth, verify=False)
     if response.status_code == 200:
         return json.loads(response.text)
     else:
