@@ -180,7 +180,7 @@ if __name__ == "__main__":  # pragma: no cover
               'SUM_WIND_1_DAY', 'SUM_WIND_3_DAY', 'SUM_WIND_5_DAY', 'SUM_WIND_10_DAY', 'SUM_WIND_15_DAY',
               ]
     csv_output.append(header)
-    for lightning in csv_lightnings[:10]:
+    for lightning in csv_lightnings[:1]:
         date = dateutil.parser.isoparse(lightning[3])
         # Get the same day lightnings
         negative_lightnings: List[Dict[str, Any]] = download_lightnings(datetime.datetime(date.year, date.month, date.day, 0, 0, 0), args.host, args.username, args.token)
@@ -188,76 +188,84 @@ if __name__ == "__main__":  # pragma: no cover
             print('Lightning not found!', lightning[3])
             break
         print(lightning[3])
-        # Remove non ground
+        # Remove non ground and lightnings that caused ignition
         negative_lightnings = [i for i in negative_lightnings if bool(i['hit_ground'])]
+        negative_lightnings = [i for i in negative_lightnings if int(i['meteocat_id']) != lightning[1]]
+        # Use random to select elements, but keep consistency between executions
         rs = RandomState(1234567890)
         rs.shuffle(negative_lightnings)
         negative_dataset = list()
-
-
-
-
-        peak_current = float(data['peak_current'])
-        chi_squared = float(data['chi_squared'])
-        number_of_sensors = int(data['number_of_sensors'])
-        hit_ground = bool(data['hit_ground'])
-        count = download_discharges(identifier, args.host, args.username, args.token)
-        if count is None:
-            print('Error in discharges count!', identifier)
-            break
-        discharges = int(count['count'])
-        land = get_land_cover(identifier, args.host, args.username, args.token)
-        if data is None:
-            print('Land cover not found!', identifier)
-            break
-        land_cover = int(land['land_cover_type'])
-        weather_station = get_nearest_weather_stations(dateutil.parser.isoparse(data['date']),
-                                                       float(data['coordinates_x']), float(data['coordinates_y']),
-                                                       args.host, args.username, args.token)
-        weather_station_code = weather_station['code']
-        print(weather_station_code)
-        days = [0, 1, 3, 5, 10, 15]
-        measures = list()
-        # Get Humidity
-        for day in days:
-            measure = get_humidity(dateutil.parser.isoparse(data['date']), day, weather_station_code, args.host, args.username, args.token)
-            if measure is not None:
-                measures.append(float(measure['value']))
+        for negative_lightning in negative_lightnings:
+            land_cover = None
+            land = get_land_cover(int(negative_lightning['id']), args.host, args.username, args.token)
+            if land is None:
+                print('Land cover not found!', negative_lightning['id'])
+                break
             else:
-                measures.append(None)
-        # Get Temperature
-        for day in days:
-            measure = get_temperature(dateutil.parser.isoparse(data['date']), day, weather_station_code, args.host, args.username, args.token)
-            if measure is not None:
-                measures.append(float(measure['value']))
-            else:
-                measures.append(None)
-        # Get Rain
-        for day in days:
-            measure = get_rain(dateutil.parser.isoparse(data['date']), day, weather_station_code, args.host, args.username, args.token)
-            if measure is not None:
-                measures.append(float(measure['value']))
-            else:
-                measures.append(None)
-        # Get Solar irradiance
-        for day in days:
-            measure = get_solar_irradiance(dateutil.parser.isoparse(data['date']), day, weather_station_code, args.host, args.username, args.token)
-            if measure is not None:
-                measures.append(float(measure['value']))
-            else:
-                measures.append(None)
-        # Get Wind
-        for day in days:
-            measure = get_wind(dateutil.parser.isoparse(data['date']), day, weather_station_code, args.host, args.username, args.token)
-            if measure is not None:
-                measures.append(float(measure['value']))
-            else:
-                measures.append(None)
+                if 0 < int(land['land_cover_type']) < 300:
+                    land_cover = int(land['land_cover_type'])
+                else:
+                    continue
+            count = download_discharges(int(negative_lightning['id']), args.host, args.username, args.token)
+            if count is None:
+                print('Error in discharges count!', int(negative_lightning['id']))
+                break
+            discharges = int(count['count'])
+            peak_current = float(negative_lightning['peak_current'])
+            chi_squared = float(negative_lightning['chi_squared'])
+            number_of_sensors = int(negative_lightning['number_of_sensors'])
+            hit_ground = bool(negative_lightning['hit_ground'])
+            weather_station = get_nearest_weather_stations(dateutil.parser.isoparse(data['date']),
+                                                           float(data['coordinates_x']), float(data['coordinates_y']),
+                                                           args.host, args.username, args.token)
+            weather_station_code = weather_station['code']
+            print(weather_station_code)
+            days = [0, 1, 3, 5, 10, 15]
+            measures = list()
+            # Get Humidity
+            for day in days:
+                measure = get_humidity(dateutil.parser.isoparse(data['date']), day, weather_station_code, args.host, args.username, args.token)
+                if measure is not None:
+                    measures.append(float(measure['value']))
+                else:
+                    measures.append(None)
+            # Get Temperature
+            for day in days:
+                measure = get_temperature(dateutil.parser.isoparse(data['date']), day, weather_station_code, args.host, args.username, args.token)
+                if measure is not None:
+                    measures.append(float(measure['value']))
+                else:
+                    measures.append(None)
+            # Get Rain
+            for day in days:
+                measure = get_rain(dateutil.parser.isoparse(data['date']), day, weather_station_code, args.host, args.username, args.token)
+                if measure is not None:
+                    measures.append(float(measure['value']))
+                else:
+                    measures.append(None)
+            # Get Solar irradiance
+            for day in days:
+                measure = get_solar_irradiance(dateutil.parser.isoparse(data['date']), day, weather_station_code, args.host, args.username, args.token)
+                if measure is not None:
+                    measures.append(float(measure['value']))
+                else:
+                    measures.append(None)
+            # Get Wind
+            for day in days:
+                measure = get_wind(dateutil.parser.isoparse(data['date']), day, weather_station_code, args.host, args.username, args.token)
+                if measure is not None:
+                    measures.append(float(measure['value']))
+                else:
+                    measures.append(None)
 
-        new_row = [identifier, peak_current, chi_squared, number_of_sensors, hit_ground, discharges, land_cover]
-        for measure in measures:
-            new_row.append(measure)
-        csv_output.append(new_row)
+            new_row = [int(negative_lightning['id']), peak_current, chi_squared, number_of_sensors, hit_ground, discharges, land_cover]
+            for measure in measures:
+                new_row.append(measure)
+            negative_dataset.append(new_row)
+            if len(negative_dataset) == 10:
+                break
+
+        csv_output += negative_dataset
 
     with open(args.output_file, 'w') as file:
         writer = csv.writer(file)

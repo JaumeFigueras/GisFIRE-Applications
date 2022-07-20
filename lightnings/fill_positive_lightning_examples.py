@@ -182,7 +182,7 @@ if __name__ == "__main__":  # pragma: no cover
             break
         discharges = int(count['count'])
         land = get_land_cover(identifier, args.host, args.username, args.token)
-        if data is None:
+        if land is None:
             print('Land cover not found!', identifier)
             break
         land_cover = int(land['land_cover_type'])
