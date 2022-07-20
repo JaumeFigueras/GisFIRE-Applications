@@ -180,17 +180,33 @@ if __name__ == "__main__":  # pragma: no cover
               'SUM_WIND_1_DAY', 'SUM_WIND_3_DAY', 'SUM_WIND_5_DAY', 'SUM_WIND_10_DAY', 'SUM_WIND_15_DAY',
               ]
     csv_output.append(header)
+    actual_date = datetime.date(2014, 1, 1)
+    end_date = datetime.date(2020, 1, 1)
+    possible_dates = list()
+    valid_dates = list()
+    invalid_dates = list()
+    while actual_date < end_date:
+        possible_dates.append(actual_date)
+        actual_date += datetime.timedelta(days=1)
     for lightning in csv_lightnings:
         date = dateutil.parser.isoparse(lightning[3])
+        invalid_dates.append(datetime.date(date.year, date.month, date.day))
+    valid_dates = [x for x in possible_dates if x not in invalid_dates]
+    rs = RandomState(1234567890)
+    rs.shuffle(valid_dates)
+    picked_days = 0
+    for date in valid_dates:
         # Get the same day lightnings
         negative_lightnings: List[Dict[str, Any]] = download_lightnings(datetime.datetime(date.year, date.month, date.day, 0, 0, 0), args.host, args.username, args.token)
-        if negative_lightnings is None or len(negative_lightnings) == 0:
-            print('Lightning not found!', lightning[3])
-            break
-        print(lightning[3])
-        # Remove non ground and lightnings that caused ignition
+        if negative_lightnings is None:
+            print('Lightnings not found!', date)
+            continue
         negative_lightnings = [i for i in negative_lightnings if bool(i['hit_ground'])]
-        negative_lightnings = [i for i in negative_lightnings if int(i['meteocat_id']) != lightning[1]]
+        if len(negative_lightnings) < 10:
+            print('Lightnings not found!', date)
+            continue
+        print('Found lightnings in date:', date)
+        # Remove non ground and lightnings that caused ignition
         # Use random to select elements, but keep consistency between executions
         rs = RandomState(1234567890)
         rs.shuffle(negative_lightnings)
@@ -276,4 +292,7 @@ if __name__ == "__main__":  # pragma: no cover
         with open(args.output_file, 'w') as file:
             writer = csv.writer(file)
             writer.writerows(csv_output)
+
+        if len(csv_output) >= len(csv_lightnings) * 10:
+            break
 

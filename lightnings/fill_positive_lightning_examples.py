@@ -34,7 +34,7 @@ def download_discharges(identifier: int, host: str, username: str, token: str) -
     if response.status_code == 200:
         return json.loads(response.text)
     else:
-        print(response.text)
+        # print(response.text)
         return None
 
 
@@ -57,7 +57,7 @@ def get_nearest_weather_stations(date: datetime.date, x: float, y: float, host: 
     if response.status_code == 200:
         return json.loads(response.text)
     else:
-        print(response.text)
+        # print(response.text)
         return None
 
 
@@ -72,7 +72,7 @@ def get_humidity(date: datetime.date, average_of_previous_days: int, station_cod
     if response.status_code == 200:
         return json.loads(response.text)
     else:
-        print(response.text)
+        # print(response.text)
         return None
 
 
@@ -87,7 +87,7 @@ def get_temperature(date: datetime.date, average_of_previous_days: int, station_
     if response.status_code == 200:
         return json.loads(response.text)
     else:
-        print(response.text)
+        # print(response.text)
         return None
 
 def get_rain(date: datetime.date, average_of_previous_days: int, station_code: str, host: str, username: str, token: str) -> Union[Dict[str, Any], None]:
@@ -101,7 +101,7 @@ def get_rain(date: datetime.date, average_of_previous_days: int, station_code: s
     if response.status_code == 200:
         return json.loads(response.text)
     else:
-        print(response.text)
+        # print(response.text)
         return None
 
 
@@ -116,7 +116,7 @@ def get_solar_irradiance(date: datetime.date, average_of_previous_days: int, sta
     if response.status_code == 200:
         return json.loads(response.text)
     else:
-        print(response.text)
+        # print(response.text)
         return None
 
 
@@ -131,7 +131,7 @@ def get_wind(date: datetime.date, average_of_previous_days: int, station_code: s
     if response.status_code == 200:
         return json.loads(response.text)
     else:
-        print(response.text)
+        # print(response.text)
         return None
 
 
@@ -165,7 +165,7 @@ if __name__ == "__main__":  # pragma: no cover
               'SUM_WIND_1_DAY', 'SUM_WIND_3_DAY', 'SUM_WIND_5_DAY', 'SUM_WIND_10_DAY', 'SUM_WIND_15_DAY',
               ]
     csv_output.append(header)
-    for lightning in csv_lightnings[:10]:
+    for lightning in csv_lightnings:
         identifier = int(lightning[0])
         data = download_lightning(identifier, args.host, args.username, args.token)
         if data is None:
@@ -200,6 +200,8 @@ if __name__ == "__main__":  # pragma: no cover
                 measures.append(float(measure['value']))
             else:
                 measures.append(None)
+        if measures[-1] is None:
+            continue
         # Get Temperature
         for day in days:
             measure = get_temperature(dateutil.parser.isoparse(data['date']), day, weather_station_code, args.host, args.username, args.token)
@@ -207,6 +209,8 @@ if __name__ == "__main__":  # pragma: no cover
                 measures.append(float(measure['value']))
             else:
                 measures.append(None)
+        if measures[-1] is None:
+            continue
         # Get Rain
         for day in days:
             measure = get_rain(dateutil.parser.isoparse(data['date']), day, weather_station_code, args.host, args.username, args.token)
@@ -214,6 +218,8 @@ if __name__ == "__main__":  # pragma: no cover
                 measures.append(float(measure['value']))
             else:
                 measures.append(None)
+        if measures[-1] is None:
+            continue
         # Get Solar irradiance
         for day in days:
             measure = get_solar_irradiance(dateutil.parser.isoparse(data['date']), day, weather_station_code, args.host, args.username, args.token)
@@ -234,7 +240,7 @@ if __name__ == "__main__":  # pragma: no cover
             new_row.append(measure)
         csv_output.append(new_row)
 
-    with open(args.output_file, 'w') as file:
-        writer = csv.writer(file)
-        writer.writerows(csv_output)
+        with open(args.output_file, 'w') as file:
+            writer = csv.writer(file)
+            writer.writerows(csv_output)
 
