@@ -81,7 +81,7 @@ def get_temperature(date: datetime.date, average_of_previous_days: int, station_
     url: str = "{}/meteocat/data/measure/{}/T?date={}".format(host, station_code,
                                                                date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
     if average_of_previous_days != 0:
-        url: str = "{}/meteocat/data/measure/{}/HR?date={}&operation=average,{}".\
+        url: str = "{}/meteocat/data/measure/{}/T?date={}&operation=average,{}".\
             format(host, station_code, date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"), str(average_of_previous_days))
     response: requests.Response = requests.get(url, auth=auth)
     if response.status_code == 200:
@@ -92,7 +92,7 @@ def get_temperature(date: datetime.date, average_of_previous_days: int, station_
 
 def get_rain(date: datetime.date, average_of_previous_days: int, station_code: str, host: str, username: str, token: str) -> Union[Dict[str, Any], None]:
     auth: HTTPBasicAuth = HTTPBasicAuth(username, token)
-    url: str = "{}/meteocat/data/measure/{}/T?date={}".format(host, station_code,
+    url: str = "{}/meteocat/data/measure/{}/PPT?date={}".format(host, station_code,
                                                                date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
     if average_of_previous_days != 0:
         url: str = "{}/meteocat/data/measure/{}/PPT?date={}&operation=sum,{}".\
@@ -155,7 +155,7 @@ if __name__ == "__main__":  # pragma: no cover
             csv_lightnings.append(row)
 
     csv_output = list()
-    header = ['ID', 'PEAK_CURRENT', 'CHI_SQUARED', 'NUMBER_OF_SENSORS', 'HIT_GROUND', 'DISCHARGES', 'LAND_COVER',
+    header = ['ID', 'DATE', 'PEAK_CURRENT', 'CHI_SQUARED', 'NUMBER_OF_SENSORS', 'HIT_GROUND', 'DISCHARGES', 'LAND_COVER',
               'REL_HUMIDITY', 'AVG_REL_HUMIDITY_1_DAY', 'AVG_REL_HUMIDITY_3_DAY', 'AVG_REL_HUMIDITY_5_DAY',
               'AVG_REL_HUMIDITY_10_DAY', 'AVG_REL_HUMIDITY_15_DAY', 'TEMPERATURE', 'AVG_TEMPERATURE_1_DAY',
               'AVG_TEMPERATURE_3_DAY', 'AVG_TEMPERATURE_5_DAY', 'AVG_TEMPERATURE_10_DAY', 'AVG_TEMPERATURE_15_DAY',
@@ -235,7 +235,7 @@ if __name__ == "__main__":  # pragma: no cover
             else:
                 measures.append(None)
 
-        new_row = [identifier, peak_current, chi_squared, number_of_sensors, hit_ground, discharges, land_cover]
+        new_row = [identifier, data['date'], peak_current, chi_squared, number_of_sensors, hit_ground, discharges, land_cover]
         for measure in measures:
             new_row.append(measure)
         csv_output.append(new_row)

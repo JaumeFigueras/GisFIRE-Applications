@@ -96,7 +96,7 @@ def get_temperature(date: datetime.date, average_of_previous_days: int, station_
     url: str = "{}/meteocat/data/measure/{}/T?date={}".format(host, station_code,
                                                                date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
     if average_of_previous_days != 0:
-        url: str = "{}/meteocat/data/measure/{}/HR?date={}&operation=average,{}".\
+        url: str = "{}/meteocat/data/measure/{}/T?date={}&operation=average,{}".\
             format(host, station_code, date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"), str(average_of_previous_days))
     response: requests.Response = requests.get(url, auth=auth)
     if response.status_code == 200:
@@ -107,7 +107,7 @@ def get_temperature(date: datetime.date, average_of_previous_days: int, station_
 
 def get_rain(date: datetime.date, average_of_previous_days: int, station_code: str, host: str, username: str, token: str) -> Union[Dict[str, Any], None]:
     auth: HTTPBasicAuth = HTTPBasicAuth(username, token)
-    url: str = "{}/meteocat/data/measure/{}/T?date={}".format(host, station_code,
+    url: str = "{}/meteocat/data/measure/{}/PPT?date={}".format(host, station_code,
                                                                date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
     if average_of_previous_days != 0:
         url: str = "{}/meteocat/data/measure/{}/PPT?date={}&operation=sum,{}".\
