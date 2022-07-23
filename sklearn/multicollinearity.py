@@ -27,6 +27,7 @@ if __name__ == "__main__":  # pragma: no cover
     examples.drop('ID', axis=1, inplace=True)
     examples.drop('NUMBER_OF_SENSORS', axis=1, inplace=True)
     examples.drop('HIT_GROUND', axis=1, inplace=True)
+    examples.drop('DATE', axis=1, inplace=True)
     examples.drop('SOLAR_IRRADIANCE', axis=1, inplace=True)
     examples.drop('SUM_SOLAR_IRRADIANCE_1_DAY', axis=1, inplace=True)
     examples.drop('SUM_SOLAR_IRRADIANCE_3_DAY', axis=1, inplace=True)
@@ -41,7 +42,8 @@ if __name__ == "__main__":  # pragma: no cover
     examples.drop('SUM_WIND_15_DAY', axis=1, inplace=True)
     # Drop rows with NaN
     examples.dropna(inplace=True)
-
+    print(examples.astype(float))
     multi_correlations = examples.corr()
+    print(multi_correlations)
     sns.heatmap(multi_correlations.abs(), annot=True, cmap="YlGnBu")
     plt.show()

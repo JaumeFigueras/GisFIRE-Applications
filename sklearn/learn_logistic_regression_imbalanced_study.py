@@ -19,11 +19,11 @@ if __name__ == "__main__":  # pragma: no cover
     args = parser.parse_args()
 
     # Load all data
-    positive_examples = pd.read_csv(args.positive_file)
+    positive_examples = pd.read_csv(args.positive_file, header = 1)
     positive_examples['FIRE'] = 1
-    negative_examples = pd.read_csv(args.negative_file)
+    negative_examples = pd.read_csv(args.negative_file, header = 1)
     negative_examples['FIRE'] = 0
-    negative_other_examples = pd.read_csv(args.negative_other_file)
+    negative_other_examples = pd.read_csv(args.negative_other_file, header = 1)
     negative_other_examples['FIRE'] = 0
 
     confusion = list()
@@ -37,6 +37,7 @@ if __name__ == "__main__":  # pragma: no cover
         examples = examples.append(negative_examples.iloc[::i].copy())
         examples = examples.append(negative_other_examples.iloc[::i].copy())
         examples.reset_index(drop=True, inplace=True)
+        examples.astype(float, implace=True)
 
         # Drop non useful columns see correlation analysis
         examples.drop('NUMBER_OF_SENSORS', axis=1, inplace=True)
